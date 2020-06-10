@@ -1,18 +1,33 @@
 import React, {useState, useEffect} from 'react';
 import styled from 'styled-components';
 import * as yup from 'yup';
+import axios from 'axios'
 
 const UserForm = styled.form`
     display: flex;
     flex-direction: column;
+    width: 30%;
 `;
 
 const UserLabel = styled.label`
     display: flex;
     justify-content: space-between;
+    flex-direction: column;
+
+    p {
+        color: red;
+        margin: 0;
+        font-size: 10px;
+    }
 `;
 
-
+const ServerPost = styled.div`
+    color: blue;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    width: 20%;
+`;
 
 const Form = () => {
     const [formData, setFormData] = useState({
@@ -30,6 +45,8 @@ const Form = () => {
         terms: '',
     })
 
+    const [post, setPost] = useState()
+
     useEffect(()=>{
         formSchema.isValid(formData).then(isFormValid => {
           setButtonDisabled(!isFormValid)
@@ -39,17 +56,19 @@ const Form = () => {
       const formSchema = yup.object().shape({
         name: yup.string().required('Name is a required field'),
         email: yup.string().email("Must be a valid email address").required("Must include email"),
-        password: yup.string().min(6, `You must have 6 characters`).required(),
-        terms: yup.boolean().oneOf([true])
+        password:   yup.string().required('No password provided.')
+                    .min(8, 'Password is too short - should be 8 chars minimum.')
+                    .matches(/[a-zA-Z]/, 'Password can only contain Latin letters.'),
+        terms: yup.boolean().oneOf([true], 'You must accept the terms')
       })
 
 
 
     const validateChanges = (e) => {
-        yup.reach(formSchema, e.target.name).validate(e.target.value).then(isValid => {
+        yup.reach(formSchema, e.target.name).validate((e.target.type === 'checkbox' ? e.target.checked : e.target.value)).then(isValid => {
             setError({
                 ...error,
-                [e.target.name]: ""
+                [e.target.name]: "",
             })
         }).catch(err => {
             // console.log(err)
@@ -69,10 +88,23 @@ const Form = () => {
 
         validateChanges(e)
         setFormData(newFormData)
+        
     }
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        axios.post('https://reqres.in/api/users', formData).then(res => {
+            setPost(res.data)
+            console.log(res.data)
+            setFormData({
+                name: '',
+                email: '',
+                password: '',
+                terms: '',
+            })
+        }).catch(err => {
+            console.log(err)
+        })
     }
 
     return (
@@ -90,10 +122,13 @@ const Form = () => {
                 {error.password.length > 0 ? <p>error: {error.password}</p> : null}
             </UserLabel>
             <UserLabel htmlFor="terms">
-                <input type="checkbox" name="terms" id="terms" onChange={onChange}></input>
                 Terms of Service
+                <input type="checkbox" name="terms" id="terms" onChange={onChange} ></input>
+                {error.terms.length > 0 ? <p>error: {error.terms}</p> : null}
+                
             </UserLabel>
             <button disabled={buttonDisabled}>Submit</button>
+            <ServerPost>{JSON.stringify(post, null,2)}</ServerPost>
         </UserForm> 
     )
 }
