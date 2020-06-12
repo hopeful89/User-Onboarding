@@ -43,9 +43,11 @@ const Form = () => {
         email: '',
         password: '',
         terms: '',
+        submit: ''
     })
 
     const [post, setPost] = useState()
+
 
     useEffect(()=>{
         formSchema.isValid(formData).then(isFormValid => {
@@ -93,14 +95,22 @@ const Form = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        e.persist();
         axios.post('https://reqres.in/api/users', formData).then(res => {
-            setPost(res.data)
-            console.log(res.data)
+            (post === undefined
+            ? setPost([res.data])
+            : post.map(obj => {
+                return (obj.email.toLowerCase() === res.data.email.toLowerCase()
+                ?   setError({
+                    ...error,
+                    submit: "This Email already Exist",
+                    })
+                : setPost([...post, res.data]));
+            }))git add
             setFormData({
                 name: '',
                 email: '',
                 password: '',
-                terms: '',
             })
         }).catch(err => {
             console.log(err)
@@ -108,26 +118,27 @@ const Form = () => {
     }
 
     return (
-        <UserForm onSubmit={handleSubmit}>
+        <UserForm  onSubmit={handleSubmit}>
             <UserLabel htmlFor="name">Name:
-                <input name="name" id="name" onChange={onChange} value={formData.name}></input>
+                <input name="name" data-cy="name" id="name" onChange={onChange} value={formData.name}></input>
                 {error.name.length > 0 ? <p>error: {error.name}</p> : null}
             </UserLabel>
             <UserLabel htmlFor="email">Email:
-                <input name="email" id="email" onChange={onChange} value={formData.email}></input>
+                <input name="email" data-cy="email" id="email" onChange={onChange} value={formData.email}></input>
                 {error.email.length > 0 ? <p>error: {error.email}</p> : null}
             </UserLabel>
             <UserLabel htmlFor="password">Password:
-                <input type="password" name="password" id="password" onChange={onChange} value={formData.password}></input>
+                <input type="password" data-cy="password" name="password" id="password" onChange={onChange} value={formData.password}></input>
                 {error.password.length > 0 ? <p>error: {error.password}</p> : null}
             </UserLabel>
             <UserLabel htmlFor="terms">
                 Terms of Service
-                <input type="checkbox" name="terms" id="terms" onChange={onChange} ></input>
+                <input type="checkbox" data-cy="checkbox" name="terms" id="terms" onChange={onChange} onSubmit={(e) => {e.target.checked = false}}></input>
                 {error.terms.length > 0 ? <p>error: {error.terms}</p> : null}
                 
             </UserLabel>
-            <button disabled={buttonDisabled}>Submit</button>
+            <button  data-cy="submit" disabled={buttonDisabled}>Submit</button>
+            {error.submit.length > 0 ? <p>error: {error.submit}</p> : null}
             <ServerPost>{JSON.stringify(post, null,2)}</ServerPost>
         </UserForm> 
     )
